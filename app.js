@@ -4,7 +4,7 @@ import { OrbitControls } from 'https://esm.sh/three@0.174.0/examples/jsm/control
 
 const WORLD_LIMIT = 7.5;
 const MODEL_URL = './assets/model.glb';
-const STORAGE_KEY = 'ai-pet-companion-pages-v2-history';
+const STORAGE_KEY = 'ai-pet-companion-pages-v3-history';
 const MAX_HISTORY_ITEMS = 10;
 
 const app = document.querySelector('#app');
@@ -13,12 +13,13 @@ app.innerHTML = `
     <div class="loading-toast show" id="loadingToast">モデルと気分を読み込み中…</div>
     <div class="layer-ui">
       <div class="mobile-toolbar">
+        <button class="mobile-chip" id="mobileUiToggle" type="button">UI表示</button>
         <button class="mobile-chip" id="mobileInfoToggle" type="button">詳細</button>
         <button class="mobile-chip" id="mobileTabLog" type="button">会話</button>
         <button class="mobile-chip" id="mobileTabInput" type="button">入力</button>
       </div>
       <section class="glass top-left">
-        <h1>AIペット companion ✨</h1>
+        <h1>AIペット companion</h1>
         <p class="subtitle">
           GitHub Pages 向けの静的版。<br>
           ペットは自律的にうろうろして、会話に合わせて雰囲気を変える。視点はドラッグで回転、ホイールやピンチでズームできるよ。
@@ -74,7 +75,7 @@ app.innerHTML = `
             <textarea id="chatInput" placeholder="例えば: おはよう、今日は元気？"></textarea>
             <div class="controls-row">
               <div class="small-note" id="backendHint">
-                この版は完全フロントのみ。GitHub Pages にそのまま置けるダミー応答版だよ。
+                この版は完全フロントのみ。スマホでは「UI表示」で会話欄を出せるダミー応答版。
               </div>
               <div style="display:flex; gap:10px; align-items:center;">
                 <button class="secondary" id="clearLogBtn" type="button">ログをクリア</button>
@@ -104,6 +105,7 @@ const ui = {
   sendBtn: document.querySelector('#sendBtn'),
   clearLogBtn: document.querySelector('#clearLogBtn'),
   infoPanel: document.querySelector('#infoPanel'),
+  mobileUiToggle: document.querySelector('#mobileUiToggle'),
   mobileInfoToggle: document.querySelector('#mobileInfoToggle'),
   mobileTabLog: document.querySelector('#mobileTabLog'),
   mobileTabInput: document.querySelector('#mobileTabInput'),
@@ -112,6 +114,8 @@ const ui = {
   tabBtnInput: document.querySelector('#tabBtnInput'),
   mobilePanels: Array.from(document.querySelectorAll('[data-panel]')),
 };
+
+const shellEl = document.querySelector('.shell');
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -258,9 +262,22 @@ const modelState = {
 
 
 const mediaMobile = window.matchMedia('(max-width: 720px)');
+let mobileUiVisible = false;
+
+function setMobileUiVisible(isVisible) {
+  mobileUiVisible = !!isVisible;
+  shellEl?.classList.toggle('ui-minimal', mediaMobile.matches ? !mobileUiVisible : false);
+  ui.mobileUiToggle?.classList.toggle('is-active', mobileUiVisible);
+  if (ui.mobileUiToggle) {
+    ui.mobileUiToggle.textContent = mobileUiVisible ? 'UI隠す' : 'UI表示';
+  }
+}
 
 function setMobileTab(tab) {
   const isMobile = mediaMobile.matches;
+  if (isMobile) {
+    setMobileUiVisible(true);
+  }
   ui.mobilePanels.forEach((panel) => {
     if (!isMobile) {
       panel.classList.add('is-active');
@@ -270,12 +287,18 @@ function setMobileTab(tab) {
   });
   ui.tabBtnLog?.classList.toggle('is-active', tab === 'log');
   ui.tabBtnInput?.classList.toggle('is-active', tab === 'input');
+  ui.mobileTabLog?.classList.toggle('is-active', tab === 'log');
+  ui.mobileTabInput?.classList.toggle('is-active', tab === 'input');
 }
 
 function setInfoPanelOpen(isOpen) {
   if (!ui.infoPanel) return;
+  if (mediaMobile.matches && isOpen) {
+    setMobileUiVisible(true);
+  }
   ui.infoPanel.classList.toggle('mobile-open', !!isOpen);
   ui.infoPanel.classList.toggle('mobile-collapsed', !isOpen);
+  ui.mobileInfoToggle?.classList.toggle('is-active', !!isOpen);
   if (ui.mobileInfoToggle) {
     ui.mobileInfoToggle.textContent = isOpen ? '閉じる' : '詳細';
   }
@@ -285,9 +308,11 @@ function syncResponsiveUi() {
   if (mediaMobile.matches) {
     setMobileTab('log');
     setInfoPanelOpen(false);
+    setMobileUiVisible(false);
   } else {
     setMobileTab('log');
     setInfoPanelOpen(true);
+    setMobileUiVisible(true);
   }
 }
 
@@ -579,6 +604,15 @@ function resetChatLog() {
   renderChatLog();
 }
 
+ui.mobileUiToggle?.addEventListener('click', () => {
+  if (!mediaMobile.matches) return;
+  const willShow = !mobileUiVisible;
+  setMobileUiVisible(willShow);
+  if (!willShow) {
+    setInfoPanelOpen(false);
+  }
+});
+
 ui.mobileInfoToggle?.addEventListener('click', () => {
   if (!mediaMobile.matches) return;
   const willOpen = !ui.infoPanel.classList.contains('mobile-open');
@@ -613,6 +647,9 @@ ui.chatForm.addEventListener('submit', async (event) => {
     const data = makeDummyResponse(message, history);
     pushChatRecord({ role: 'assistant', content: data.reply, ...data });
     applyDirective(data);
+    if (mediaMobile.matches) {
+      setMobileTab('log');
+    }
     ui.sourceText.textContent = data.source;
     ui.statusText.textContent = '返事したよ';
   } catch (error) {

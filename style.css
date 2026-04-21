@@ -50,6 +50,23 @@ select {
   position: relative;
 }
 
+.shell.ui-minimal .top-left,
+.shell.ui-minimal .top-right,
+.shell.ui-minimal .bottom-panel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px) scale(0.98);
+}
+
+.shell.ui-minimal .top-left,
+.shell.ui-minimal .top-right,
+.shell.ui-minimal .bottom-panel,
+.top-left,
+.top-right,
+.bottom-panel {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
 .layer-ui {
   position: absolute;
   inset: 0;
@@ -177,13 +194,13 @@ select {
 
 .log-panel,
 .input-panel {
-  min-height: 220px;
+  min-height: 188px;
   padding: 16px;
   border-radius: 24px;
 }
 
 .chat-log {
-  height: 200px;
+  height: 168px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -230,7 +247,7 @@ select {
 
 textarea {
   width: 100%;
-  min-height: 108px;
+  min-height: 92px;
   resize: vertical;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
@@ -391,6 +408,7 @@ button.secondary {
 }
 
 .mobile-tab.is-active,
+.mobile-chip.is-active,
 .mobile-chip:hover {
   background: rgba(142, 167, 255, 0.24);
 }
@@ -525,5 +543,101 @@ button.secondary {
 
   .small-note {
     font-size: 12px;
+  }
+}
+
+
+.mobile-toolbar {
+  flex-wrap: wrap;
+  max-width: 70vw;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .shell.ui-minimal .mobile-toolbar {
+    max-width: calc(100vw - 20px);
+  }
+}
+
+@media (max-width: 720px) {
+  .mobile-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: calc(100vw - 20px);
+    justify-content: flex-end;
+  }
+
+  .top-left {
+    top: max(10px, env(safe-area-inset-top));
+    width: calc(100vw - 24px);
+    padding: 10px 10px 8px;
+    border-radius: 18px;
+  }
+
+  .top-left h1 {
+    font-size: 15px;
+    margin-bottom: 4px;
+    padding-right: 158px;
+  }
+
+  .status-grid {
+    gap: 6px;
+  }
+
+  .status-card {
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .status-label {
+    font-size: 9px;
+  }
+
+  .status-value {
+    font-size: 12px;
+    margin-top: 3px;
+  }
+
+  .top-right {
+    top: calc(max(10px, env(safe-area-inset-top)) + 94px);
+    width: calc(100vw - 24px);
+    padding: 12px;
+    border-radius: 16px;
+    max-height: min(38vh, 280px);
+    overflow: auto;
+  }
+
+  .bottom-panel {
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    max-height: min(38vh, 320px);
+    overflow: hidden;
+  }
+
+  .log-panel,
+  .input-panel {
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .log-panel h2,
+  .input-panel h2 {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .chat-log {
+    height: min(20vh, 168px);
+  }
+
+  textarea {
+    min-height: 76px;
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+
+  .small-note {
+    font-size: 11px;
   }
 }
