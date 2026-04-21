@@ -4,7 +4,7 @@ import { OrbitControls } from 'https://esm.sh/three@0.174.0/examples/jsm/control
 
 const WORLD_LIMIT = 7.5;
 const MODEL_URL = './assets/model.glb';
-const STORAGE_KEY = 'ai-pet-companion-pages-v1-history';
+const STORAGE_KEY = 'ai-pet-companion-pages-v2-history';
 const MAX_HISTORY_ITEMS = 10;
 
 const app = document.querySelector('#app');
@@ -12,6 +12,11 @@ app.innerHTML = `
   <div class="shell">
     <div class="loading-toast show" id="loadingToast">モデルと気分を読み込み中…</div>
     <div class="layer-ui">
+      <div class="mobile-toolbar">
+        <button class="mobile-chip" id="mobileInfoToggle" type="button">詳細</button>
+        <button class="mobile-chip" id="mobileTabLog" type="button">会話</button>
+        <button class="mobile-chip" id="mobileTabInput" type="button">入力</button>
+      </div>
       <section class="glass top-left">
         <h1>AIペット companion ✨</h1>
         <p class="subtitle">
@@ -38,7 +43,7 @@ app.innerHTML = `
         </div>
       </section>
 
-      <section class="glass top-right">
+      <section class="glass top-right mobile-collapsed" id="infoPanel">
         <h2>いまの挙動</h2>
         <div class="tag-row">
           <span class="tag">歩行アニメ <b id="clipText">-</b></span>
@@ -54,12 +59,16 @@ app.innerHTML = `
         </ol>
       </section>
 
-      <section class="bottom-panel">
-        <div class="glass log-panel">
+      <section class="bottom-panel" id="bottomPanel">
+        <div class="mobile-tabs" id="mobileTabs">
+          <button class="mobile-tab is-active" id="tabBtnLog" type="button" data-tab="log">会話ログ</button>
+          <button class="mobile-tab" id="tabBtnInput" type="button" data-tab="input">入力</button>
+        </div>
+        <div class="glass log-panel panel-log is-active" data-panel="log">
           <h2>会話ログ</h2>
           <div class="chat-log" id="chatLog"></div>
         </div>
-        <div class="glass input-panel">
+        <div class="glass input-panel panel-input" data-panel="input">
           <h2>話しかける</h2>
           <form class="form" id="chatForm">
             <textarea id="chatInput" placeholder="例えば: おはよう、今日は元気？"></textarea>
@@ -94,6 +103,14 @@ const ui = {
   chatInput: document.querySelector('#chatInput'),
   sendBtn: document.querySelector('#sendBtn'),
   clearLogBtn: document.querySelector('#clearLogBtn'),
+  infoPanel: document.querySelector('#infoPanel'),
+  mobileInfoToggle: document.querySelector('#mobileInfoToggle'),
+  mobileTabLog: document.querySelector('#mobileTabLog'),
+  mobileTabInput: document.querySelector('#mobileTabInput'),
+  mobileTabs: document.querySelector('#mobileTabs'),
+  tabBtnLog: document.querySelector('#tabBtnLog'),
+  tabBtnInput: document.querySelector('#tabBtnInput'),
+  mobilePanels: Array.from(document.querySelectorAll('[data-panel]')),
 };
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -238,6 +255,41 @@ const modelState = {
   walkAction: null,
   loaded: false,
 };
+
+
+const mediaMobile = window.matchMedia('(max-width: 720px)');
+
+function setMobileTab(tab) {
+  const isMobile = mediaMobile.matches;
+  ui.mobilePanels.forEach((panel) => {
+    if (!isMobile) {
+      panel.classList.add('is-active');
+      return;
+    }
+    panel.classList.toggle('is-active', panel.dataset.panel === tab);
+  });
+  ui.tabBtnLog?.classList.toggle('is-active', tab === 'log');
+  ui.tabBtnInput?.classList.toggle('is-active', tab === 'input');
+}
+
+function setInfoPanelOpen(isOpen) {
+  if (!ui.infoPanel) return;
+  ui.infoPanel.classList.toggle('mobile-open', !!isOpen);
+  ui.infoPanel.classList.toggle('mobile-collapsed', !isOpen);
+  if (ui.mobileInfoToggle) {
+    ui.mobileInfoToggle.textContent = isOpen ? '閉じる' : '詳細';
+  }
+}
+
+function syncResponsiveUi() {
+  if (mediaMobile.matches) {
+    setMobileTab('log');
+    setInfoPanelOpen(false);
+  } else {
+    setMobileTab('log');
+    setInfoPanelOpen(true);
+  }
+}
 
 const KEYWORD_RULES = [
   {
@@ -526,6 +578,19 @@ function resetChatLog() {
   saveHistory();
   renderChatLog();
 }
+
+ui.mobileInfoToggle?.addEventListener('click', () => {
+  if (!mediaMobile.matches) return;
+  const willOpen = !ui.infoPanel.classList.contains('mobile-open');
+  setInfoPanelOpen(willOpen);
+});
+
+ui.mobileTabLog?.addEventListener('click', () => setMobileTab('log'));
+ui.mobileTabInput?.addEventListener('click', () => setMobileTab('input'));
+ui.tabBtnLog?.addEventListener('click', () => setMobileTab('log'));
+ui.tabBtnInput?.addEventListener('click', () => setMobileTab('input'));
+mediaMobile.addEventListener('change', syncResponsiveUi);
+syncResponsiveUi();
 
 ui.clearLogBtn.addEventListener('click', () => {
   resetChatLog();
